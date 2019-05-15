@@ -1,72 +1,83 @@
 package br.com.bb.controller;
 
+import br.com.bb.Application;
+import br.com.bb.entity.Product;
+import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.context.WebApplicationContext;
 
-import br.com.bb.Application;
+import java.util.Arrays;
+import java.util.List;
 
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.setup.MockMvcBuilders.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = Application.class)
-@WebAppConfiguration
-public class ProductControllerTest {
-
-	@Autowired
-    private WebApplicationContext webApplicationContext;
-
-	private MockMvc mockMvc;
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = Application.class)
+public class ProductControllerTest extends BaseTestSupport{
 
 	@Before
-    public void setup() throws Exception {
-        this.mockMvc = webAppContextSetup(webApplicationContext).build();
+    public void setup() {
+		RestAssured.port = port;
 	}
 
 	@Test
-    public void listByCategoryAlimentos() throws Exception {
-        mockMvc.perform(get("/product/listByCategory/1"))
-        .andExpect(status().isOk())
-	    		.andExpect(jsonPath("$", hasSize(2)))
-	        .andExpect(jsonPath("$[0].id", is(1)))
-	        .andExpect(jsonPath("$[0].name", is("Arroz")))
-	        .andExpect(jsonPath("$[1].id", is(2)))
-	        .andExpect(jsonPath("$[1].name", is("Feijão")));
+    public void listByCategoryAlimentos() {
+		Response response = doGetRequest("/product/listByCategory/1", "{}")
+				.then()
+				.statusCode(HttpStatus.OK.value())
+				.extract().response();
+
+		List<Product> products = Arrays.asList(response.as(Product[].class));
+
+		assertThat(products).isNotEmpty();
+		assertThat(products).extracting("id", "name")
+				.contains(tuple(1L, "Arroz"),
+						tuple(2L, "Feijão"));
     }
 
 	@Test
-	public void listByCategoryEletrodomésticos() throws Exception {
-		mockMvc.perform(get("/product/listByCategory/2"))
-		.andExpect(status().isOk())
-		.andExpect(jsonPath("$", hasSize(3)))
-		.andExpect(jsonPath("$[0].id", is(3)))
-		.andExpect(jsonPath("$[0].name", is("Aspirador de pó")))
-		.andExpect(jsonPath("$[1].id", is(4)))
-		.andExpect(jsonPath("$[1].name", is("Batedeira")))
-		.andExpect(jsonPath("$[2].id", is(5)))
-		.andExpect(jsonPath("$[2].name", is("Liquidificador")));
+	public void listByCategoryEletrodomesticos() {
+		Response response = doGetRequest("/product/listByCategory/2", "{}")
+				.then()
+				.statusCode(HttpStatus.OK.value())
+				.extract().response();
+
+		List<Product> products = Arrays.asList(response.as(Product[].class));
+
+		assertThat(products).isNotEmpty();
+		assertThat(products).extracting("id", "name")
+				.contains(tuple(3L, "Aspirador de pó"),
+						tuple(4L, "Batedeira"),
+						tuple(5L, "Liquidificador"));
 	}
 
 	@Test
-	public void listByCategoryMóveis() throws Exception {
-		mockMvc.perform(get("/product/listByCategory/3"))
-		.andExpect(status().isOk())
-		.andExpect(jsonPath("$", hasSize(3)))
-		.andExpect(jsonPath("$[0].id", is(6)))
-		.andExpect(jsonPath("$[0].name", is("Sofá")))
-		.andExpect(jsonPath("$[1].id", is(7)))
-		.andExpect(jsonPath("$[1].name", is("Mesa")))
-		.andExpect(jsonPath("$[2].id", is(8)))
-		.andExpect(jsonPath("$[2].name", is("Estante")));
+	public void listByCategoryMoveis() {
+		Response response = doGetRequest("/product/listByCategory/3", "{}")
+				.then()
+				.statusCode(HttpStatus.OK.value())
+				.extract().response();
+
+		List<Product> products = Arrays.asList(response.as(Product[].class));
+
+		assertThat(products).isNotEmpty();
+		assertThat(products).extracting("id", "name")
+				.contains(tuple(6L, "Sofá"),
+						tuple(7L, "Mesa"),
+						tuple(8L, "Estante"));
+	}
+
+	@Test
+	public void listByInvalidCategory() {
+		doGetRequest("/product/listByCategory/99", "{}")
+				.then()
+				.statusCode(HttpStatus.NOT_FOUND.value());
 	}
 }
